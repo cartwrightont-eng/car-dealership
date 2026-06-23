@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ car.year }} {{ car.make }} {{ car.model }} — Apex Motors Kenya{% endblock %}
-
+{% block meta_description %}{{ car.year }} {{ car.make }} {{ car.model }} for sale in Nairobi, Kenya. {{ car.mileage }} km, {{ car.transmission }}, {{ car.fuel_type }}. KES {{ car.price }}. Contact Apex Motors today.{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ car.year }} {{ car.make }} {{ car.model }} — KES {{ car.price }} — Apex Motors Kenya{% endblock %}
+{% block og_description %}{{ car.year }} {{ car.make }} {{ car.model }}, {{ car.mileage }} km, {{ car.fuel_type }}, {{ car.transmission }}. Available at Apex Motors Nairobi.{% endblock %}
+{% block twitter_title %}{{ car.year }} {{ car.make }} {{ car.model }} — KES {{ car.price }}{% endblock %}
+{% block twitter_description %}{{ car.mileage }} km, {{ car.fuel_type }}, {{ car.transmission }}. Available at Apex Motors Nairobi.{% endblock %}
 {% block content %}
+
 <div class="detail-page">
   <!-- BREADCRUMB -->
   <div class="breadcrumb">

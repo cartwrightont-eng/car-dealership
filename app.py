@@ -355,6 +355,28 @@ def admin_inquiries():
     db.session.commit()
     return render_template('admin/inquiries.html', inquiries=inquiries)
 
+@app.route('/sitemap.xml')
+def sitemap():
+    from flask import Response
+    cars = Car.query.filter_by(is_sold=False).all()
+    pages = []
+    pages.append('https://www.apexmotors.co.ke/')
+    pages.append('https://www.apexmotors.co.ke/inventory')
+    for car in cars:
+        pages.append(f'https://www.apexmotors.co.ke/car/{car.id}')
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for page in pages:
+        xml += f'  <url><loc>{page}</loc></url>\n'
+    xml += '</urlset>'
+    return Response(xml, mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    from flask import Response
+    txt = 'User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://www.apexmotors.co.ke/sitemap.xml'
+    return Response(txt, mimetype='text/plain')
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
