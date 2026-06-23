@@ -27,6 +27,7 @@
       {% if messages %}{% for cat, msg in messages %}<div class="error">{{ msg }}</div>{% endfor %}{% endif %}
     {% endwith %}
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label for="password">Password</label>
       <input type="password" name="password" id="password" placeholder="Enter admin password" autofocus>
       <button type="submit">Sign In</button>

@@ -1,18 +1,28 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
+import bcrypt
 from datetime import datetime
-import os
-import json
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'nairobi-motors-secret-2024'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dealership.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600
 
 db = SQLAlchemy(app)
-
-# Jinja filter: parse JSON strings in templates
-app.jinja_env.filters['fromjson'] = lambda s: json.loads(s) if s else []
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # ─── MODELS ───────────────────────────────────────────────────────────────────
 
@@ -200,6 +210,8 @@ def car_detail(car_id):
     return render_template('car_detail.html', car=car, similar=similar)
 
 @app.route('/inquiry', methods=['POST'])
+@limiter.limit("5 per minute")
+@csrf.exempt
 def submit_inquiry():
     data = request.form
     inquiry = Inquiry(
@@ -224,7 +236,7 @@ def api_cars():
 
 # ─── ADMIN ROUTES ──────────────────────────────────────────────────────────────
 
-ADMIN_PASSWORD = 'nairobi2024'
+
 
 @app.route('/admin')
 def admin():
@@ -243,9 +255,12 @@ def admin():
     return render_template('admin/dashboard.html', cars=cars, inquiries=inquiries, stats=stats)
 
 @app.route('/admin/login', methods=['GET', 'POST'])
+@app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
+        password = request.form.get('password', '').encode()
+        stored_hash = os.getenv('ADMIN_PASSWORD_HASH', '').encode()
+        if stored_hash and bcrypt.checkpw(password, stored_hash):
             session['admin'] = True
             return redirect(url_for('admin'))
         flash('Incorrect password.', 'error')
