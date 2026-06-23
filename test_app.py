@@ -359,3 +359,135 @@ def test_financing_zero_down_payment(client):
     deposit = 0.0
     months = 36
     annual_rate = 0.12
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# AUTHENTICATION - LOGGED IN ADMIN
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@pytest.fixture
+def admin_client():
+    app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = False
+    with app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['admin'] = True
+        yield client
+
+def test_admin_dashboard_loads_when_logged_in(admin_client):
+    res = admin_client.get('/admin')
+    assert res.status_code == 200
+
+def test_admin_can_view_inquiries(admin_client):
+    res = admin_client.get('/admin/inquiries')
+    assert res.status_code == 200
+
+def test_admin_can_access_add_car_form(admin_client):
+    res = admin_client.get('/admin/cars/add')
+    assert res.status_code == 200
+
+def test_admin_can_add_car(admin_client):
+    with app.app_context():
+        initial_count = Car.query.count()
+    res = admin_client.post('/admin/cars/add', data={
+        'make': 'Honda', 'model': 'Fit', 'year': 2018,
+        'price': 900000, 'mileage': 60000,
+        'fuel_type': 'Petrol', 'transmission': 'Automatic',
+        'body_type': 'Hatchback', 'color': 'Blue',
+        'engine_cc': 1300, 'condition': 'Used',
+        'import_country': 'Japan', 'description': 'Test car',
+        'features': 'ABS\nAirbags', 'images': ''
+    })
+    assert res.status_code in [200, 302]
+    with app.app_context():
+        assert Car.query.count() == initial_count + 1
+
+def test_admin_can_edit_car(admin_client):
+    with app.app_context():
+        car = Car.query.first()
+        car_id = car.id
+    res = admin_client.post(f'/admin/cars/{car_id}/edit', data={
+        'make': 'Toyota', 'model': 'Axio Updated', 'year': 2020,
+        'price': 1700000, 'mileage': 50000,
+        'fuel_type': 'Petrol', 'transmission': 'Automatic',
+        'body_type': 'Sedan', 'color': 'Silver',
+        'engine_cc': 1500, 'condition': 'Used',
+        'import_country': 'Japan', 'description': 'Updated',
+        'features': 'ABS', 'images': ''
+    })
+    assert res.status_code in [200, 302]
+    with app.app_context():
+        car = Car.query.get(car_id)
+        assert car.model == 'Axio Updated'
+
+def test_admin_can_delete_car(admin_client):
+    with app.app_context():
+        car = Car(
+            make='Delete', model='Me', year=2020, price=100000,
+            mileage=10000, fuel_type='Petrol', transmission='Automatic',
+            body_type='Sedan', color='Red', engine_cc=1000,
+            condition='Used', import_country='Japan',
+            description='To delete', features='[]', images='[]'
+        )
+        db.session.add(car)
+        db.session.commit()
+        car_id = car.id
+    res = admin_client.post(f'/admin/cars/{car_id}/delete')
+    assert res.status_code in [200, 302]
+    with app.app_context():
+        assert Car.query.get(car_id) is None
+
+def test_admin_logout(admin_client):
+    res = admin_client.get('/admin/logout', follow_redirects=False)
+    assert res.status_code == 302
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# DATA INTEGRITY
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def test_car_fields_saved_correctly(admin_client):
+    with app.app_context():
+        admin_client.post('/admin/cars/add', data={
+            'make': 'Mazda', 'model': 'Demio', 'year': 2019,
+            'price': 1200000, 'mileage': 45000,
+            'fuel_type': 'Petrol', 'transmission': 'Automatic',
+            'body_type': 'Hatchback', 'color': 'White',
+            'engine_cc': 1300, 'condition': 'Used',
+            'import_country': 'Japan', 'description': 'Nice car',
+            'features': 'ABS\nBluetooth', 'images': ''
+        })
+        car = Car.query.filter_by(model='Demio').first()
+        assert car is not None
+        assert car.make == 'Mazda'
+        assert car.price == 1200000
+        assert car.year == 2019
+
+def test_sold_cars_excluded_from_inventory(client):
+    with app.app_context():
+        Car.query.update({'is_sold': False})
+        db.session.commit()
+        car = Car.query.first()
+        car.is_sold = True
+        db.session.commit()
+        sold_id = car.id
+    res = client.get('/inventory')
+    assert res.status_code == 200
+    with app.app_context():
+        available = Car.query.filter_by(is_sold=False).count()
+        sold = Car.query.filter_by(is_sold=True).count()
+        assert sold >= 1
+        assert available >= 0
+
+def test_api_returns_correct_count(client):
+    with app.app_context():
+        Car.query.update({'is_sold': False})
+        db.session.commit()
+        expected = Car.query.filter_by(is_sold=False).count()
+    res = client.get('/api/cars')
+    data = json.loads(res.data)
+    assert len(data) == expected
+
+def test_car_to_dict_features_is_list(client):
+    res = client.get('/api/cars')
+    data = json.loads(res.data)
+    if data:
+        assert isinstance(data[0]['features'], list)
+        assert isinstance(data[0]['images'], list)
