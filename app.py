@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
@@ -12,7 +13,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dealership.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///dealership.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600
 
@@ -21,8 +22,17 @@ csrf = CSRFProtect(app)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["200 per day", "5000 per hour"]
 )
+
+import json as _json
+
+@app.template_filter('fromjson')
+def fromjson_filter(value):
+    try:
+        return _json.loads(value) if value else []
+    except:
+        return []
 
 # ─── MODELS ───────────────────────────────────────────────────────────────────
 
@@ -254,7 +264,6 @@ def admin():
     }
     return render_template('admin/dashboard.html', cars=cars, inquiries=inquiries, stats=stats)
 
-@app.route('/admin/login', methods=['GET', 'POST'])
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
