@@ -224,6 +224,13 @@ def car_detail(car_id):
 @csrf.exempt
 def submit_inquiry():
     data = request.form
+    name = data.get('name')
+    phone = data.get('phone')
+    if not name or not phone:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Name and phone are required.'}), 400
+        flash('Name and phone are required.', 'error')
+        return redirect(request.referrer or url_for('index'))
     inquiry = Inquiry(
         car_id=data.get('car_id', type=int),
         name=data.get('name'),
