@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Inventory — Apex Motors Kenya{% endblock %}
+
+{% block content %}
+<div class="inventory-page">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <h1>Browse Inventory</h1>
+      <p>{{ cars.total }} vehicles available. Inspected, certified, ready to drive.</p>
+    </div>
+  </div>
+
+  <div class="inventory-layout">
+
+    <!-- SIDEBAR FILTERS -->
+    <aside class="filter-sidebar">
+      <div class="filter-header">
+        <h3>Filter Vehicles</h3>
+        <a href="{{ url_for('inventory') }}" class="filter-clear">Clear All</a>
+      </div>
+      <form method="GET" action="{{ url_for('inventory') }}" id="filterForm">
+
+        <div class="filter-group">
+          <label>Make</label>
+          <select name="make">
+            <option value="">All Makes</option>
+            {% for make in makes %}
+            <option value="{{ make }}" {% if filters.make == make %}selected{% endif %}>{{ make }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Body Type</label>
+          <select name="body_type">
+            <option value="">All Types</option>
+            {% for bt in ['SUV', 'Sedan', 'Hatchback', 'Pickup', 'Van', 'Coupe'] %}
+            <option value="{{ bt }}" {% if filters.body_type == bt %}selected{% endif %}>{{ bt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Fuel Type</label>
+          <select name="fuel_type">
+            <option value="">All Fuels</option>
+            {% for ft in ['Petrol', 'Diesel', 'Hybrid', 'Electric'] %}
+            <option value="{{ ft }}" {% if filters.fuel_type == ft %}selected{% endif %}>{{ ft }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Transmission</label>
+          <select name="transmission">
+            <option value="">All</option>
+            <option value="Automatic" {% if filters.transmission == 'Automatic' %}selected{% endif %}>Automatic</option>
+            <option value="Manual" {% if filters.transmission == 'Manual' %}selected{% endif %}>Manual</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Price Range (KES)</label>
+          <select name="max_price">
+            <option value="99999999">Any Budget</option>
+            <option value="1500000" {% if filters.max_price == 1500000 %}selected{% endif %}>Under 1.5M</option>
+            <option value="2500000" {% if filters.max_price == 2500000 %}selected{% endif %}>Under 2.5M</option>
+            <option value="4000000" {% if filters.max_price == 4000000 %}selected{% endif %}>Under 4M</option>
+            <option value="6000000" {% if filters.max_price == 6000000 %}selected{% endif %}>Under 6M</option>
+            <option value="9000000" {% if filters.max_price == 9000000 %}selected{% endif %}>Under 9M</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Year From</label>
+          <select name="min_year">
+            {% for y in range(2024, 2009, -1) %}
+            <option value="{{ y }}" {% if filters.min_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+            <option value="2000" {% if filters.min_year == 2000 %}selected{% endif %}>Any Year</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary filter-apply">Apply Filters</button>
+      </form>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="inventory-main">
+      <div class="inventory-toolbar">
+        <span class="result-count">{{ cars.total }} results</span>
+        <form method="GET" action="{{ url_for('inventory') }}" class="sort-form">
+          <!-- preserve other filters -->
+          {% for k, v in filters.items() %}
+            {% if k != 'sort' and v %}
+            <input type="hidden" name="{{ k }}" value="{{ v }}">
+            {% endif %}
+          {% endfor %}
+          <select name="sort" onchange="this.form.submit()" class="sort-select">
+            <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest First</option>
+            <option value="price_asc" {% if filters.sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_desc" {% if filters.sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+            <option value="year_desc" {% if filters.sort == 'year_desc' %}selected{% endif %}>Year: Newest</option>
+          </select>
+        </form>
+      </div>
+
+      {% if cars.items %}
+      <div class="car-grid car-grid-3">
+        {% for car in cars.items %}
+        <a href="{{ url_for('car_detail', car_id=car.id) }}" class="car-card">
+          <div class="car-card-img-wrap">
+            <img src="{{ (car.images | fromjson)[0] if car.images else 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&q=80' }}"
+                 alt="{{ car.year }} {{ car.make }} {{ car.model }}" class="car-card-img" loading="lazy">
+            <div class="car-card-badges">
+              {% if car.condition == 'New' %}<span class="badge badge-new">New</span>{% endif %}
+              {% if car.import_country %}<span class="badge badge-import">{{ car.import_country }}</span>{% endif %}
+            </div>
+            <div class="car-card-fuel">{{ car.fuel_type }}</div>
+          </div>
+          <div class="car-card-body">
+            <div class="car-card-year">{{ car.year }} · {{ car.transmission }}</div>
+            <h3 class="car-card-title">{{ car.make }} {{ car.model }}</h3>
+            <div class="car-card-specs">
+              <span>{{ "{:,}".format(car.mileage) }} km</span>
+              <span>{{ car.body_type }}</span>
+              {% if car.engine_cc %}<span>{{ car.engine_cc }}cc</span>{% endif %}
+            </div>
+            <div class="car-card-footer">
+              <div class="car-card-price">KES {{ "{:,}".format(car.price) }}</div>
+              <div class="car-card-cta">View →</div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- PAGINATION -->
+      {% if cars.pages > 1 %}
+      <div class="pagination">
+        {% if cars.has_prev %}
+        <a href="{{ url_for('inventory', page=cars.prev_num, make=filters.make, body_type=filters.body_type, fuel_type=filters.fuel_type, transmission=filters.transmission, max_price=filters.max_price, min_year=filters.min_year, sort=filters.sort) }}" class="page-btn">← Prev</a>
+        {% endif %}
+        {% for p in cars.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <a href="{{ url_for('inventory', page=p, make=filters.make, body_type=filters.body_type, fuel_type=filters.fuel_type, transmission=filters.transmission, max_price=filters.max_price, min_year=filters.min_year, sort=filters.sort) }}"
+             class="page-btn {% if p == cars.page %}page-active{% endif %}">{{ p }}</a>
+          {% else %}
+          <span class="page-ellipsis">…</span>
+          {% endif %}
+        {% endfor %}
+        {% if cars.has_next %}
+        <a href="{{ url_for('inventory', page=cars.next_num, make=filters.make, body_type=filters.body_type, fuel_type=filters.fuel_type, transmission=filters.transmission, max_price=filters.max_price, min_year=filters.min_year, sort=filters.sort) }}" class="page-btn">Next →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">🚗</div>
+        <h3>No vehicles match your filters</h3>
+        <p>Try adjusting your search criteria or browse our full inventory.</p>
+        <a href="{{ url_for('inventory') }}" class="btn btn-primary">Clear Filters</a>
+      </div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}

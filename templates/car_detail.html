@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}{{ car.year }} {{ car.make }} {{ car.model }} — Apex Motors Kenya{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> /
+    <a href="{{ url_for('inventory') }}">Inventory</a> /
+    <span>{{ car.year }} {{ car.make }} {{ car.model }}</span>
+  </div>
+
+  <div class="detail-layout">
+    <!-- LEFT: Gallery + Specs -->
+    <div class="detail-left">
+
+      <!-- GALLERY -->
+      <div class="gallery">
+        {% set images = car.images | fromjson if car.images else [] %}
+        <div class="gallery-main">
+          <img id="mainImg"
+               src="{{ images[0] if images else 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900&q=80' }}"
+               alt="{{ car.year }} {{ car.make }} {{ car.model }}" class="gallery-main-img">
+          {% if car.is_featured %}
+          <div class="gallery-badge">Featured</div>
+          {% endif %}
+        </div>
+        {% if images | length > 1 %}
+        <div class="gallery-thumbs">
+          {% for img in images %}
+          <img src="{{ img }}" alt="View {{ loop.index }}" class="gallery-thumb {% if loop.first %}active{% endif %}"
+               onclick="switchImg('{{ img }}', this)">
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- SPECS TABLE -->
+      <div class="specs-card">
+        <h3>Vehicle Specifications</h3>
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-label">Make</span>
+            <span class="spec-value">{{ car.make }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Model</span>
+            <span class="spec-value">{{ car.model }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Year</span>
+            <span class="spec-value">{{ car.year }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Mileage</span>
+            <span class="spec-value">{{ "{:,}".format(car.mileage) }} km</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Transmission</span>
+            <span class="spec-value">{{ car.transmission }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Fuel Type</span>
+            <span class="spec-value">{{ car.fuel_type }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Body Type</span>
+            <span class="spec-value">{{ car.body_type }}</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Color</span>
+            <span class="spec-value">{{ car.color }}</span>
+          </div>
+          {% if car.engine_cc %}
+          <div class="spec-item">
+            <span class="spec-label">Engine</span>
+            <span class="spec-value">{{ car.engine_cc }}cc</span>
+          </div>
+          {% endif %}
+          <div class="spec-item">
+            <span class="spec-label">Condition</span>
+            <span class="spec-value">{{ car.condition }}</span>
+          </div>
+          {% if car.import_country %}
+          <div class="spec-item">
+            <span class="spec-label">Imported From</span>
+            <span class="spec-value">{{ car.import_country }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- DESCRIPTION -->
+      {% if car.description %}
+      <div class="specs-card">
+        <h3>About This Vehicle</h3>
+        <p class="car-description">{{ car.description }}</p>
+      </div>
+      {% endif %}
+
+      <!-- FEATURES -->
+      {% set features = car.features | fromjson if car.features else [] %}
+      {% if features %}
+      <div class="specs-card">
+        <h3>Features & Equipment</h3>
+        <ul class="features-list">
+          {% for feature in features %}
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ feature }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Price + Inquiry -->
+    <div class="detail-right">
+      <div class="inquiry-card sticky-card">
+        <div class="car-price-tag">KES {{ "{:,}".format(car.price) }}</div>
+        <div class="car-title-detail">{{ car.year }} {{ car.make }} {{ car.model }}</div>
+        <div class="car-meta-pills">
+          <span class="pill">{{ car.transmission }}</span>
+          <span class="pill">{{ car.fuel_type }}</span>
+          <span class="pill">{{ "{:,}".format(car.mileage) }} km</span>
+          {% if car.import_country %}<span class="pill">{{ car.import_country }}</span>{% endif %}
+        </div>
+
+        <!-- FINANCING CALCULATOR -->
+<div class="monthly-calc" id="financeCalc">
+  <span class="monthly-label">Financing Calculator</span>
+  <span class="monthly-val" id="monthlyResult">KES {{ "{:,}".format((car.price * 0.3 / 48) | int) }} / mo</span>
+  <span class="monthly-note">Indicative only — actual rates vary by lender</span>
+  <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+    <div>
+      <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:4px;">Deposit: <span id="depositLabel">30%</span></label>
+      <input type="range" id="depositSlider" min="10" max="70" value="30" step="5"
+        style="width:100%; accent-color:var(--gold);">
+    </div>
+    <div>
+      <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:4px;">Loan term: <span id="termLabel">48 months</span></label>
+      <input type="range" id="termSlider" min="12" max="72" value="48" step="12"
+        style="width:100%; accent-color:var(--gold);">
+    </div>
+    <div style="font-size:12px; color:var(--muted); display:flex; justify-content:space-between;">
+      <span>Loan amount: <span id="loanAmount" style="color:var(--gold);">—</span></span>
+      <span>Rate: 14% p.a.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const price = {{ car.price }};
+  const depositSlider = document.getElementById('depositSlider');
+  const termSlider = document.getElementById('termSlider');
+  const monthlyResult = document.getElementById('monthlyResult');
+  const depositLabel = document.getElementById('depositLabel');
+  const termLabel = document.getElementById('termLabel');
+  const loanAmount = document.getElementById('loanAmount');
+  const annualRate = 0.14;
+
+  function calcMonthly() {
+    const deposit = parseInt(depositSlider.value) / 100;
+    const months = parseInt(termSlider.value);
+    const principal = price * (1 - deposit);
+    const monthlyRate = annualRate / 12;
+    const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+    
+    depositLabel.textContent = depositSlider.value + '%';
+    termLabel.textContent = months + ' months';
+    loanAmount.textContent = 'KES ' + Math.round(principal).toLocaleString();
+    monthlyResult.textContent = 'KES ' + Math.round(payment).toLocaleString() + ' / mo';
+  }
+
+  depositSlider.addEventListener('input', calcMonthly);
+  termSlider.addEventListener('input', calcMonthly);
+  calcMonthly();
+})();
+</script>
+        <!-- INQUIRY FORM -->
+        <form id="inquiryForm" class="inquiry-form">
+          <input type="hidden" name="car_id" value="{{ car.id }}">
+          <h4>Book a Test Drive or Ask a Question</h4>
+          <input type="text" name="name" placeholder="Your Full Name" required class="form-input">
+          <input type="tel" name="phone" placeholder="Phone Number (07xxxxxxxx)" required class="form-input">
+          <input type="email" name="email" placeholder="Email (optional)" class="form-input">
+          <select name="inquiry_type" class="form-input">
+            <option value="general">General Inquiry</option>
+            <option value="test_drive">Book Test Drive</option>
+            <option value="financing">Financing Question</option>
+          </select>
+          <textarea name="message" placeholder="Your message (optional)" class="form-input form-textarea" rows="3"></textarea>
+          <button type="submit" class="btn btn-primary btn-full">Send Inquiry</button>
+        </form>
+
+        <div id="inquirySuccess" class="inquiry-success" style="display:none">
+          <div class="success-icon">✓</div>
+          <h4>Inquiry Received</h4>
+          <p>We'll call you within 2 hours during business hours.</p>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="quick-actions">
+          <a href="https://wa.me/254700000000?text=I'm interested in the {{ car.year }} {{ car.make }} {{ car.model }} listed at KES {{ "{:,}".format(car.price) }}"
+             target="_blank" class="btn btn-whatsapp btn-full">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Chat on WhatsApp
+          </a>
+          <a href="tel:+254700000000" class="btn btn-outline btn-full">Call: 0700 000 000</a>
+        </div>
+
+        <!-- TRUST BADGES -->
+        <div class="detail-trust">
+          <div class="dt-item">✓ 120-Point Inspected</div>
+          <div class="dt-item">✓ History Report Available</div>
+          <div class="dt-item">✓ 7-Day Return Policy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMILAR VEHICLES -->
+  {% if similar %}
+  <section class="similar-section">
+    <h3>Similar Vehicles</h3>
+    <div class="car-grid">
+      {% for s in similar %}
+      <a href="{{ url_for('car_detail', car_id=s.id) }}" class="car-card">
+        <div class="car-card-img-wrap">
+          <img src="{{ (s.images | fromjson)[0] if s.images else 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&q=80' }}"
+               alt="{{ s.year }} {{ s.make }} {{ s.model }}" class="car-card-img" loading="lazy">
+          <div class="car-card-fuel">{{ s.fuel_type }}</div>
+        </div>
+        <div class="car-card-body">
+          <div class="car-card-year">{{ s.year }} · {{ s.transmission }}</div>
+          <h3 class="car-card-title">{{ s.make }} {{ s.model }}</h3>
+          <div class="car-card-footer">
+            <div class="car-card-price">KES {{ "{:,}".format(s.price) }}</div>
+            <div class="car-card-cta">View →</div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchImg(src, thumb) {
+  document.getElementById('mainImg').src = src;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+
+document.getElementById('inquiryForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  const fd = new FormData(this);
+  try {
+    const res = await fetch('/inquiry', {
+      method: 'POST',
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+      body: fd
+    });
+    const data = await res.json();
+    if (data.success) {
+      this.style.display = 'none';
+      document.getElementById('inquirySuccess').style.display = 'flex';
+    }
+  } catch(err) {
+    btn.textContent = 'Send Inquiry';
+    btn.disabled = false;
+    alert('Something went wrong. Please call us directly.');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Edit' if car else 'Add' }} Vehicle — Apex Motors Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e8eaf0; --muted: #8b8fa8; --gold: #c9a84c; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+    .admin-layout { display: flex; min-height: 100vh; }
+    .admin-sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; }
+    .sidebar-logo { font-weight: 800; font-size: 1.1rem; color: var(--gold); margin-bottom: 2rem; }
+    .sidebar-link { display: block; padding: 0.65rem 0.75rem; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .sidebar-link:hover { color: var(--gold); }
+    .admin-main { flex: 1; }
+    .admin-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-title { font-weight: 600; }
+    .admin-content { padding: 2rem; max-width: 800px; }
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .form-card h3 { font-size: 0.9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.25rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.8rem; color: var(--muted); }
+    input, select, textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; color: var(--text); font-size: 0.875rem; width: 100%; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    textarea { resize: vertical; min-height: 100px; }
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
+    .checkbox-row input[type=checkbox] { width: auto; accent-color: var(--gold); }
+    .checkbox-row label { font-size: 0.875rem; color: var(--text); margin: 0; }
+    .form-actions { display: flex; gap: 1rem; padding-top: 0.5rem; }
+    .btn { display: inline-flex; align-items: center; padding: 0.65rem 1.5rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; text-decoration: none; border: none; }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn-gold:hover { background: #d4a843; }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    .flash { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">⚡ APEX ADMIN</div>
+    <a href="{{ url_for('admin') }}" class="sidebar-link">← Dashboard</a>
+    <a href="{{ url_for('admin_add_car') }}" class="sidebar-link">Add Vehicle</a>
+    <a href="{{ url_for('admin_inquiries') }}" class="sidebar-link">Inquiries</a>
+    <a href="{{ url_for('index') }}" class="sidebar-link">View Site</a>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div class="topbar-title">{{ 'Edit' if car else 'Add New' }} Vehicle</div>
+    </div>
+    <div class="admin-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <!-- BASIC INFO -->
+        <div class="form-card">
+          <h3>Basic Information</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Make *</label>
+              <input type="text" name="make" value="{{ car.make if car else '' }}" placeholder="Toyota" required>
+            </div>
+            <div class="form-group">
+              <label>Model *</label>
+              <input type="text" name="model" value="{{ car.model if car else '' }}" placeholder="Land Cruiser Prado" required>
+            </div>
+            <div class="form-group">
+              <label>Year *</label>
+              <input type="number" name="year" value="{{ car.year if car else '' }}" placeholder="2020" min="1990" max="2025" required>
+            </div>
+            <div class="form-group">
+              <label>Color</label>
+              <input type="text" name="color" value="{{ car.color if car else '' }}" placeholder="Pearl White">
+            </div>
+            <div class="form-group">
+              <label>Condition</label>
+              <select name="condition">
+                {% for c in ['Used', 'New', 'Certified'] %}
+                <option value="{{ c }}" {% if car and car.condition == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Import Country</label>
+              <input type="text" name="import_country" value="{{ car.import_country if car else '' }}" placeholder="Japan">
+            </div>
+          </div>
+        </div>
+
+        <!-- SPECS -->
+        <div class="form-card">
+          <h3>Specifications</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Price (KES) *</label>
+              <input type="number" name="price" value="{{ car.price if car else '' }}" placeholder="2500000" required>
+            </div>
+            <div class="form-group">
+              <label>Mileage (km) *</label>
+              <input type="number" name="mileage" value="{{ car.mileage if car else '' }}" placeholder="45000" required>
+            </div>
+            <div class="form-group">
+              <label>Fuel Type</label>
+              <select name="fuel_type">
+                {% for ft in ['Petrol', 'Diesel', 'Hybrid', 'Electric'] %}
+                <option value="{{ ft }}" {% if car and car.fuel_type == ft %}selected{% endif %}>{{ ft }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Transmission</label>
+              <select name="transmission">
+                {% for t in ['Automatic', 'Manual'] %}
+                <option value="{{ t }}" {% if car and car.transmission == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Body Type</label>
+              <select name="body_type">
+                {% for bt in ['SUV', 'Sedan', 'Hatchback', 'Pickup', 'Van', 'Coupe', 'Convertible'] %}
+                <option value="{{ bt }}" {% if car and car.body_type == bt %}selected{% endif %}>{{ bt }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Engine (cc)</label>
+              <input type="number" name="engine_cc" value="{{ car.engine_cc if car else '' }}" placeholder="2000">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="form-card">
+          <h3>Description & Features</h3>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Description</label>
+              <textarea name="description" placeholder="Describe the vehicle — condition, history, standout features...">{{ car.description if car else '' }}</textarea>
+            </div>
+            <div class="form-group full">
+              <label>Features (one per line)</label>
+              <textarea name="features" placeholder="4WD&#10;Leather Seats&#10;Sunroof&#10;Navigation">{% if car and car.features %}{% set feats = car.features | fromjson %}{{ feats | join('\n') }}{% endif %}</textarea>
+              <span class="hint">Enter each feature on a new line</span>
+            </div>
+            <div class="form-group full">
+              <label>Image URLs (one per line)</label>
+              <textarea name="images" placeholder="https://example.com/car1.jpg&#10;https://example.com/car2.jpg">{% if car and car.images %}{% set imgs = car.images | fromjson %}{{ imgs | join('\n') }}{% endif %}</textarea>
+              <span class="hint">Unsplash or direct image URLs. First image is the main photo.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLAGS -->
+        <div class="form-card">
+          <h3>Listing Flags</h3>
+          <div class="checkbox-row">
+            <input type="checkbox" name="is_featured" id="is_featured" {% if car and car.is_featured %}checked{% endif %}>
+            <label for="is_featured">Featured on homepage</label>
+          </div>
+          {% if car %}
+          <div class="checkbox-row">
+            <input type="checkbox" name="is_sold" id="is_sold" {% if car.is_sold %}checked{% endif %}>
+            <label for="is_sold">Mark as Sold</label>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-gold">{{ 'Save Changes' if car else 'Add Vehicle' }}</button>
+          <a href="{{ url_for('admin') }}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+</body>
+</html>

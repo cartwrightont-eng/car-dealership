@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Apex Motors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --text: #e8eaf0; --muted: #8b8fa8; --gold: #c9a84c;
+      --green: #22c55e; --red: #ef4444; --blue: #3b82f6;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .admin-layout { display: flex; min-height: 100vh; }
+    /* SIDEBAR */
+    .admin-sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .sidebar-logo { font-weight: 800; font-size: 1.1rem; color: var(--gold); letter-spacing: 0.05em; margin-bottom: 1.5rem; }
+    .sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 0.875rem; transition: all 0.15s; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(201,168,76,0.1); color: var(--gold); }
+    .sidebar-link svg { width: 16px; height: 16px; }
+    .sidebar-footer { margin-top: auto; }
+    .badge-red { background: var(--red); color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-left: auto; }
+    /* MAIN */
+    .admin-main { flex: 1; overflow-x: hidden; }
+    .admin-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-title { font-weight: 600; font-size: 1.1rem; }
+    .admin-content { padding: 2rem; }
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .stat-num { font-size: 2rem; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    /* TABLES */
+    .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+    td { padding: 0.85rem 1rem; font-size: 0.875rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+    .badge-avail { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-sold { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-featured { background: rgba(201,168,76,0.15); color: var(--gold); }
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 500; cursor: pointer; text-decoration: none; border: none; transition: all 0.15s; }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn-gold:hover { background: #d4a843; }
+    .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.75rem; }
+    .btn-danger { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .actions { display: flex; gap: 0.5rem; }
+    .price-cell { color: var(--gold); font-weight: 600; }
+    .flash { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.3); font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">⚡ APEX ADMIN</div>
+    <a href="{{ url_for('admin') }}" class="sidebar-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="{{ url_for('admin_add_car') }}" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Vehicle
+    </a>
+    <a href="{{ url_for('admin_inquiries') }}" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Inquiries
+      {% if stats.unread > 0 %}<span class="badge-red">{{ stats.unread }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('index') }}" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      View Site
+    </a>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('admin_logout') }}" class="sidebar-link" style="color: var(--red);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div class="topbar-title">Dashboard</div>
+      <a href="{{ url_for('admin_add_car') }}" class="btn btn-gold">+ Add New Vehicle</a>
+    </div>
+    <div class="admin-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}
+      {% endwith %}
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num">{{ stats.available }}</div>
+          <div class="stat-label">Available</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">{{ stats.sold }}</div>
+          <div class="stat-label">Sold</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">{{ stats.inquiries }}</div>
+          <div class="stat-label">Total Inquiries</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--red)">{{ stats.unread }}</div>
+          <div class="stat-label">Unread Inquiries</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        All Vehicles ({{ cars | length }})
+        <a href="{{ url_for('admin_add_car') }}" class="btn btn-gold btn-sm">+ Add</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Vehicle</th><th>Year</th><th>Price</th><th>Mileage</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for car in cars %}
+            <tr>
+              <td><strong>{{ car.make }} {{ car.model }}</strong></td>
+              <td>{{ car.year }}</td>
+              <td class="price-cell">KES {{ "{:,}".format(car.price) }}</td>
+              <td>{{ "{:,}".format(car.mileage) }} km</td>
+              <td>
+                {% if car.is_sold %}
+                  <span class="badge badge-sold">Sold</span>
+                {% else %}
+                  <span class="badge badge-avail">Available</span>
+                {% endif %}
+                {% if car.is_featured %}<span class="badge badge-featured">★</span>{% endif %}
+              </td>
+              <td>
+                <div class="actions">
+                  <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-outline btn-sm" target="_blank">View</a>
+                  <a href="{{ url_for('admin_edit_car', car_id=car.id) }}" class="btn btn-outline btn-sm">Edit</a>
+                  <form method="POST" action="{{ url_for('admin_delete_car', car_id=car.id) }}" onsubmit="return confirm('Delete this listing?');" style="display:inline">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-title">Recent Inquiries</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Phone</th><th>Type</th><th>Vehicle</th><th>Date</th></tr>
+          </thead>
+          <tbody>
+            {% for inq in inquiries %}
+            <tr>
+              <td>{{ inq.name }}</td>
+              <td><a href="tel:{{ inq.phone }}" style="color:var(--gold)">{{ inq.phone }}</a></td>
+              <td>{{ inq.inquiry_type | replace('_', ' ') | title }}</td>
+              <td>{% if inq.car %}{{ inq.car.make }} {{ inq.car.model }}{% else %}General{% endif %}</td>
+              <td style="color:var(--muted)">{{ inq.created_at.strftime('%d %b %Y') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

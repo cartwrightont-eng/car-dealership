@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Apex Motors Kenya — Quality Cars, Honest Prices{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-overlay"></div>
+    <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600&q=80" alt="Luxury cars" class="hero-img">
+  </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Nairobi's Most Trusted Dealer</div>
+    <h1 class="hero-headline">Drive What You<br>Deserve.</h1>
+    <p class="hero-sub">{{ total_cars }}+ inspected vehicles. Genuine history reports. M-Pesa financing available. No hidden costs.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('inventory') }}" class="btn btn-primary btn-lg">Browse Inventory</a>
+      <a href="https://wa.me/254700000000" target="_blank" class="btn btn-ghost btn-lg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp Us
+      </a>
+    </div>
+  </div>
+  <!-- QUICK SEARCH -->
+  <div class="quick-search">
+    <form action="{{ url_for('inventory') }}" method="GET" class="quick-search-form">
+      <select name="make" class="qs-select">
+        <option value="">Any Make</option>
+        {% for make in makes %}
+        <option value="{{ make }}">{{ make }}</option>
+        {% endfor %}
+      </select>
+      <select name="body_type" class="qs-select">
+        <option value="">Any Type</option>
+        <option value="SUV">SUV</option>
+        <option value="Sedan">Sedan</option>
+        <option value="Hatchback">Hatchback</option>
+        <option value="Pickup">Pickup</option>
+        <option value="Van">Van</option>
+      </select>
+      <select name="max_price" class="qs-select">
+        <option value="99999999">Any Budget</option>
+        <option value="1500000">Under KES 1.5M</option>
+        <option value="2500000">Under KES 2.5M</option>
+        <option value="4000000">Under KES 4M</option>
+        <option value="6000000">Under KES 6M</option>
+        <option value="9000000">Under KES 9M</option>
+      </select>
+      <button type="submit" class="btn btn-primary qs-btn">Search Cars</button>
+    </form>
+  </div>
+</section>
+
+<!-- TRUST STRIP -->
+<section class="trust-strip">
+  <div class="trust-items">
+    <div class="trust-item">
+      <span class="trust-num">{{ total_cars }}+</span>
+      <span class="trust-label">Cars in Stock</span>
+    </div>
+    <div class="trust-divider"></div>
+    <div class="trust-item">
+      <span class="trust-num">7-Day</span>
+      <span class="trust-label">Return Policy</span>
+    </div>
+    <div class="trust-divider"></div>
+    <div class="trust-item">
+      <span class="trust-num">150+</span>
+      <span class="trust-label">Happy Clients</span>
+    </div>
+    <div class="trust-divider"></div>
+    <div class="trust-item">
+      <span class="trust-num">M-Pesa</span>
+      <span class="trust-label">Financing Available</span>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED CARS -->
+<section class="section featured-section">
+  <div class="section-header">
+    <div class="section-eyebrow">Hand-picked for quality</div>
+    <h2 class="section-title">Featured Vehicles</h2>
+    <a href="{{ url_for('inventory') }}" class="section-link">View all inventory →</a>
+  </div>
+  <div class="car-grid">
+    {% for car in featured %}
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="car-card">
+      <div class="car-card-img-wrap">
+        {% set images = car.images | tojson | fromjson if car.images else [] %}
+        {% set img_list = car.images %}
+        <img src="{{ (car.images | fromjson)[0] if car.images else 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&q=80' }}" 
+             alt="{{ car.year }} {{ car.make }} {{ car.model }}" class="car-card-img" loading="lazy">
+        <div class="car-card-badges">
+          {% if car.condition == 'New' %}<span class="badge badge-new">New</span>{% endif %}
+          {% if car.is_featured %}<span class="badge badge-featured">Featured</span>{% endif %}
+        </div>
+        <div class="car-card-fuel">{{ car.fuel_type }}</div>
+      </div>
+      <div class="car-card-body">
+        <div class="car-card-year">{{ car.year }} · {{ car.transmission }}</div>
+        <h3 class="car-card-title">{{ car.make }} {{ car.model }}</h3>
+        <div class="car-card-specs">
+          <span>{{ "{:,}".format(car.mileage) }} km</span>
+          <span>{{ car.body_type }}</span>
+          {% if car.engine_cc %}<span>{{ car.engine_cc }}cc</span>{% endif %}
+        </div>
+        <div class="car-card-footer">
+          <div class="car-card-price">KES {{ "{:,}".format(car.price) }}</div>
+          <div class="car-card-cta">View Details →</div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- WHY US -->
+<section class="section why-section">
+  <div class="why-grid">
+    <div class="why-text">
+      <div class="section-eyebrow">Why Apex Motors</div>
+      <h2 class="section-title">We don't just sell cars.<br>We stand behind them.</h2>
+      <p class="why-body">Every vehicle in our showroom has passed a 120-point mechanical inspection. We show you the full history — mileage verification, accident records, ownership history — before you spend a shilling. That's not industry standard. That's just how we think you should be treated.</p>
+      <a href="{{ url_for('inventory') }}" class="btn btn-primary">Browse Our Stock</a>
+    </div>
+    <div class="why-features">
+      <div class="why-feature">
+        <div class="why-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div>
+          <h4>120-Point Inspection</h4>
+          <p>Every car assessed by certified mechanics before listing.</p>
+        </div>
+      </div>
+      <div class="why-feature">
+        <div class="why-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div>
+          <h4>Full History Reports</h4>
+          <p>Mileage verification, ownership history, import records shown upfront.</p>
+        </div>
+      </div>
+      <div class="why-feature">
+        <div class="why-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+        <div>
+          <h4>M-Pesa Financing</h4>
+          <p>Flexible payment plans. Drive today, pay over time.</p>
+        </div>
+      </div>
+      <div class="why-feature">
+        <div class="why-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+        <div>
+          <h4>7-Day Return Policy</h4>
+          <p>Not satisfied? Return it within 7 days, no questions asked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINANCING SECTION -->
+<section class="section financing-section" id="financing">
+  <div class="financing-inner">
+    <div class="section-eyebrow" style="color:var(--gold)">Flexible Payments</div>
+    <h2 class="section-title" style="color:#fff">Drive today.<br>Pay your way.</h2>
+    <p style="color:rgba(255,255,255,0.7); max-width:500px; margin:0 auto 2.5rem">We partner with leading banks and Saccos across Kenya. Calculate your monthly repayment and get pre-qualified in minutes.</p>
+    <div class="financing-cards">
+      <div class="fin-card">
+        <div class="fin-icon">🏦</div>
+        <h4>Bank Financing</h4>
+        <p>Up to 80% LTV. Repayment periods up to 60 months. Competitive interest rates.</p>
+      </div>
+      <div class="fin-card">
+        <div class="fin-icon">📱</div>
+        <h4>M-Pesa Instalment</h4>
+        <p>Linked to M-Pesa. Pay weekly or monthly directly from your phone. No bank account needed.</p>
+      </div>
+      <div class="fin-card">
+        <div class="fin-icon">🤝</div>
+        <h4>SACCO Partnership</h4>
+        <p>Already in a Sacco? We work with 40+ Saccos across Kenya for preferential rates.</p>
+      </div>
+    </div>
+    <a href="https://wa.me/254700000000?text=I'd like to inquire about financing options" class="btn btn-gold btn-lg">Get Financing Quote</a>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-eyebrow">What clients say</div>
+    <h2 class="section-title">Real stories, real buyers</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"Bought a Toyota Prado from Apex last year. The vehicle report they showed me was exactly as advertised — no surprises after purchase. That transparency is rare in Nairobi."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">JM</div>
+        <div>
+          <strong>James Mwangi</strong>
+          <span>Westlands, Nairobi</span>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"The M-Pesa financing made it possible for me to drive a car I honestly didn't think I could afford. My CX-5 is now 8 months old and hasn't missed a beat."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">GN</div>
+        <div>
+          <strong>Grace Njeri</strong>
+          <span>Kiambu County</span>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="stars">★★★★★</div>
+      <p>"I sourced three fleet pickups from Apex for our construction company. They came in under budget and all three are still running clean after 60,000km of site work."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">PO</div>
+        <div>
+          <strong>Peter Omondi</strong>
+          <span>Fleet Manager, Nairobi</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK INQUIRY -->
+<section class="section cta-section">
+  <div class="cta-inner">
+    <h2>Can't find what you're looking for?</h2>
+    <p>Tell us your exact requirements. We import on order from Japan, UK, and UAE — usually within 6–8 weeks.</p>
+    <div class="cta-actions">
+      <a href="https://wa.me/254700000000?text=I'm looking for a specific vehicle" target="_blank" class="btn btn-primary btn-lg">Tell Us What You Need</a>
+      <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-lg">Browse Full Stock</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Apex Motors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0f1117; color: #e8eaf0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 380px; }
+    .login-logo { font-size: 1.2rem; font-weight: 800; color: #c9a84c; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .login-sub { color: #8b8fa8; font-size: 0.875rem; margin-bottom: 2rem; }
+    label { display: block; font-size: 0.8rem; color: #8b8fa8; margin-bottom: 0.4rem; }
+    input[type=password] { width: 100%; background: #0f1117; border: 1px solid #2a2d3a; border-radius: 8px; padding: 0.75rem 1rem; color: #e8eaf0; font-size: 0.9rem; outline: none; transition: border-color 0.15s; margin-bottom: 1.25rem; }
+    input[type=password]:focus { border-color: #c9a84c; }
+    button { width: 100%; background: #c9a84c; color: #000; font-weight: 600; font-size: 0.9rem; padding: 0.85rem; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #d4a843; }
+    .error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 0.75rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-logo">⚡ APEX MOTORS</div>
+    <div class="login-sub">Admin Panel — Authorised Access Only</div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}<div class="error">{{ msg }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+    <form method="POST">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" placeholder="Enter admin password" autofocus>
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+</body>
+</html>

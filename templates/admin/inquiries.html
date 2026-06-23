@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquiries — Apex Motors Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e8eaf0; --muted: #8b8fa8; --gold: #c9a84c; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+    .admin-layout { display: flex; min-height: 100vh; }
+    .admin-sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; }
+    .sidebar-logo { font-weight: 800; font-size: 1.1rem; color: var(--gold); margin-bottom: 2rem; }
+    .sidebar-link { display: block; padding: 0.65rem 0.75rem; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .sidebar-link:hover, .sidebar-link.active { color: var(--gold); background: rgba(201,168,76,0.1); }
+    .admin-main { flex: 1; }
+    .admin-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; font-weight: 600; }
+    .admin-content { padding: 2rem; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+    td { padding: 1rem; font-size: 0.875rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .inq-name { font-weight: 600; }
+    .inq-phone a { color: var(--gold); text-decoration: none; }
+    .inq-msg { color: var(--muted); font-size: 0.8rem; max-width: 300px; }
+    .inq-date { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+    .badge-general { background: rgba(139,143,168,0.2); color: var(--muted); }
+    .badge-test_drive { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .badge-financing { background: rgba(201,168,76,0.15); color: var(--gold); }
+    .wa-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; background: #25d366; color: #fff; border-radius: 6px; font-size: 0.75rem; text-decoration: none; font-weight: 500; }
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">⚡ APEX ADMIN</div>
+    <a href="{{ url_for('admin') }}" class="sidebar-link">Dashboard</a>
+    <a href="{{ url_for('admin_add_car') }}" class="sidebar-link">Add Vehicle</a>
+    <a href="{{ url_for('admin_inquiries') }}" class="sidebar-link active">Inquiries</a>
+    <a href="{{ url_for('index') }}" class="sidebar-link">View Site</a>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">All Inquiries ({{ inquiries | length }})</div>
+    <div class="admin-content">
+      {% if inquiries %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Contact</th>
+              <th>Type</th>
+              <th>Vehicle</th>
+              <th>Message</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inq in inquiries %}
+            <tr>
+              <td>
+                <div class="inq-name">{{ inq.name }}</div>
+                <div class="inq-phone"><a href="tel:{{ inq.phone }}">{{ inq.phone }}</a></div>
+                {% if inq.email %}<div style="color:var(--muted);font-size:0.8rem">{{ inq.email }}</div>{% endif %}
+              </td>
+              <td>
+                <span class="badge badge-{{ inq.inquiry_type }}">{{ inq.inquiry_type | replace('_', ' ') | title }}</span>
+              </td>
+              <td>
+                {% if inq.car %}
+                  <a href="{{ url_for('car_detail', car_id=inq.car.id) }}" style="color:var(--gold);text-decoration:none">
+                    {{ inq.car.year }} {{ inq.car.make }} {{ inq.car.model }}
+                  </a>
+                {% else %}
+                  <span style="color:var(--muted)">General</span>
+                {% endif %}
+              </td>
+              <td class="inq-msg">{{ inq.message or '—' }}</td>
+              <td class="inq-date">{{ inq.created_at.strftime('%d %b %Y') }}<br>{{ inq.created_at.strftime('%H:%M') }}</td>
+              <td>
+                <a href="https://wa.me/{{ inq.phone | replace('+','') | replace(' ','') }}?text=Hi {{ inq.name }}, thanks for your inquiry about {% if inq.car %}the {{ inq.car.year }} {{ inq.car.make }} {{ inq.car.model }}{% else %}our vehicles{% endif %}. This is Apex Motors."
+                   target="_blank" class="wa-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">No inquiries yet.</div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+</body>
+</html>
