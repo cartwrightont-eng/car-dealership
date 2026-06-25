@@ -63,11 +63,13 @@ def get_distinct_id():
 
 @app.errorhandler(Exception)
 def handle_exception(e):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
     import sentry_sdk
     sentry_sdk.capture_exception(e)
     posthog_client.capture_exception(e)
     return '<h1>500 — Server Error</h1><p>Something went wrong. We\'ve been notified.</p>', 500
-
 import json as _json
 
 @app.template_filter('fromjson')
