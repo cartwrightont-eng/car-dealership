@@ -253,3 +253,18 @@
 </section>
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('.quick-search-form').addEventListener('submit', function() {
+  var make = this.querySelector('[name=make]').value;
+  var bodyType = this.querySelector('[name=body_type]').value;
+  var maxPrice = this.querySelector('[name=max_price]').value;
+  posthog.capture('home_search_submitted', {
+    make: make || null,
+    body_type: bodyType || null,
+    max_price: maxPrice !== '99999999' ? parseInt(maxPrice) : null,
+  });
+});
+</script>
+{% endblock %}

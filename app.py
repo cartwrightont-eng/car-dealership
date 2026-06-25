@@ -1,5 +1,8 @@
+import atexit
 import os
+import uuid
 import json
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
@@ -8,14 +11,42 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import bcrypt
 from datetime import datetime
+from posthog import Posthog
 
 load_dotenv()
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+    dsn=os.getenv('SENTRY_DSN'),
+    integrations=[FlaskIntegration()],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment=os.getenv('FLASK_ENV', 'development')
+)
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from posthog import Posthog
+
+
+posthog_client = Posthog(
+    os.getenv('POSTHOG_PROJECT_TOKEN', ''),
+    host=os.getenv('POSTHOG_HOST', 'https://eu.i.posthog.com'),
+    enable_exception_autocapture=True,
+)
+atexit.register(posthog_client.shutdown)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///dealership.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600
+app.config['POSTHOG_PROJECT_TOKEN'] = os.getenv('POSTHOG_PROJECT_TOKEN', '')
+app.config['POSTHOG_HOST'] = os.getenv('POSTHOG_HOST', 'https://eu.i.posthog.com')
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -24,6 +55,18 @@ limiter = Limiter(
     app=app,
     default_limits=["200 per day", "5000 per hour"]
 )
+
+def get_distinct_id():
+    if 'distinct_id' not in session:
+        session['distinct_id'] = str(uuid.uuid4())
+    return session['distinct_id']
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import sentry_sdk
+    sentry_sdk.capture_exception(e)
+    posthog_client.capture_exception(e)
+    return '<h1>500 — Server Error</h1><p>Something went wrong. We\'ve been notified.</p>', 500
 
 import json as _json
 
@@ -203,6 +246,22 @@ def inventory():
 
     cars = query.paginate(page=page, per_page=9, error_out=False)
     makes = [m[0] for m in db.session.query(Car.make).distinct().all()]
+    filters_active = any([make, body_type, fuel_type, transmission,
+                          min_price > 0, max_price < 99999999,
+                          min_year > 2000, max_year < 2025, sort != 'newest'])
+    if filters_active:
+        posthog_client.capture(
+            get_distinct_id(),
+            'inventory_searched',
+            properties={
+                'make': make or None,
+                'body_type': body_type or None,
+                'fuel_type': fuel_type or None,
+                'transmission': transmission or None,
+                'sort': sort,
+                'result_count': cars.total,
+            }
+        )
     return render_template('inventory.html', cars=cars, makes=makes,
                            filters={'make': make, 'body_type': body_type,
                                     'fuel_type': fuel_type, 'transmission': transmission,
@@ -217,6 +276,20 @@ def car_detail(car_id):
         Car.id != car.id,
         Car.is_sold == False
     ).limit(3).all()
+    posthog_client.capture(
+        get_distinct_id(),
+        'car_detail_viewed',
+        properties={
+            'make': car.make,
+            'model': car.model,
+            'year': car.year,
+            'body_type': car.body_type,
+            'fuel_type': car.fuel_type,
+            'transmission': car.transmission,
+            'condition': car.condition,
+            'is_featured': car.is_featured,
+        }
+    )
     return render_template('car_detail.html', car=car, similar=similar)
 
 @app.route('/inquiry', methods=['POST'])
@@ -241,6 +314,15 @@ def submit_inquiry():
     )
     db.session.add(inquiry)
     db.session.commit()
+    posthog_client.capture(
+        get_distinct_id(),
+        'inquiry_submitted',
+        properties={
+            'inquiry_type': inquiry.inquiry_type,
+            'has_car_id': inquiry.car_id is not None,
+            'has_message': bool(inquiry.message and inquiry.message.strip()),
+        }
+    )
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({'success': True, 'message': 'Inquiry received. We\'ll call you within 2 hours.'})
     flash('Your inquiry has been received. We\'ll contact you within 2 hours.', 'success')
@@ -278,6 +360,7 @@ def admin_login():
         stored_hash = os.getenv('ADMIN_PASSWORD_HASH', '').encode()
         if stored_hash and bcrypt.checkpw(password, stored_hash):
             session['admin'] = True
+            posthog_client.capture('admin', 'admin_logged_in')
             return redirect(url_for('admin'))
         flash('Incorrect password.', 'error')
     return render_template('admin/login.html')
@@ -308,6 +391,17 @@ def admin_add_car():
         )
         db.session.add(car)
         db.session.commit()
+        posthog_client.capture(
+            'admin',
+            'car_listing_added',
+            properties={
+                'make': car.make,
+                'body_type': car.body_type,
+                'fuel_type': car.fuel_type,
+                'condition': car.condition,
+                'is_featured': car.is_featured,
+            }
+        )
         flash(f'{car.year} {car.make} {car.model} added successfully.', 'success')
         return redirect(url_for('admin'))
     return render_template('admin/car_form.html', car=None)
@@ -321,6 +415,7 @@ def admin_edit_car(car_id):
         f = request.form
         features = [x.strip() for x in f.get('features', '').split('\n') if x.strip()]
         images = [x.strip() for x in f.get('images', '').split('\n') if x.strip()]
+        was_sold_before = car.is_sold
         car.make = f['make']; car.model = f['model']; car.year = int(f['year'])
         car.price = int(f['price']); car.mileage = int(f['mileage'])
         car.fuel_type = f['fuel_type']; car.transmission = f['transmission']
@@ -332,6 +427,17 @@ def admin_edit_car(car_id):
         car.is_sold = 'is_sold' in f
         car.features = json.dumps(features); car.images = json.dumps(images)
         db.session.commit()
+        if not was_sold_before and car.is_sold:
+            posthog_client.capture(
+                'admin',
+                'car_listing_marked_sold',
+                properties={
+                    'make': car.make,
+                    'model': car.model,
+                    'year': car.year,
+                    'body_type': car.body_type,
+                }
+            )
         flash('Listing updated.', 'success')
         return redirect(url_for('admin'))
     return render_template('admin/car_form.html', car=car)
@@ -341,6 +447,16 @@ def admin_delete_car(car_id):
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
     car = Car.query.get_or_404(car_id)
+    posthog_client.capture(
+        'admin',
+        'car_listing_deleted',
+        properties={
+            'make': car.make,
+            'model': car.model,
+            'year': car.year,
+            'body_type': car.body_type,
+        }
+    )
     db.session.delete(car)
     db.session.commit()
     flash('Listing deleted.', 'success')
@@ -377,8 +493,3 @@ def robots():
     txt = 'User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: https://www.apexmotors.co.ke/sitemap.xml'
     return Response(txt, mimetype='text/plain')
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed_cars()
-    app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true', port=5000)
